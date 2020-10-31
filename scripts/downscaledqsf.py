@@ -13,7 +13,7 @@ from subprocess import call
 from metpy.units import units as mpu
 from datetime import datetime, timedelta
 
-import psutil 
+import psutil
 from functools import partial
 from multiprocessing import Pool, cpu_count, get_context
 
@@ -26,6 +26,8 @@ from ds_config import *
 os.environ['OMP_NUM_THREADS'] = str("1")
 
 if __name__ == '__main__':
+    
+    input('filter type: %s\nsigma override:%s'%(grid_filter, sigma_override))
 
     # Determine which model run to grab
     model = sys.argv[1] 
@@ -126,8 +128,13 @@ if __name__ == '__main__':
 
         # Calculate the mixing ratio
         qv = isobaric.t.copy().rename('qv')
-        qv.values = np.array(mpc.mixing_ratio_from_relative_humidity(
-            isobaric.r.values/100, isobaric.t.values-273.15*mpu.degC, p.values*mpu.millibar))
+                
+        qv.values = np.array(
+            mpc.mixing_ratio_from_relative_humidity(
+                isobaric.r.values*mpu.percent, 
+                (isobaric.t.values-273.15)*mpu.degC,
+                p.values*mpu.millibar))
+                
         # Repair the dimensions after metpy messes with them
         qv['time'] = isobaric.time
         qv['level'] = isobaric.level
@@ -186,7 +193,7 @@ if __name__ == '__main__':
                 "Cores Available: {}\nCores to use: {}\n").format(
                 hmem_avail, len(indexer), hmem_need,
                 memlim, cores))
-
+        
         downscale_calc_grids_mpi = partial(
             downscale_calc_grids, 
             model=model, init_req=init_req, temp=temp)
