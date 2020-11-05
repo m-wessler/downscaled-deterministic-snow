@@ -14,8 +14,8 @@ terrainfile = prism_dir + 'usterrain.nc'
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # PRISM Configuration
 
-grid_filter = 'gaussian' #['gaussian', 'box']
-sigma_override = None #round(27.75/.8, 0) #0.25deg
+grid_filter = 'box' #['gaussian', 'box']
+sigma_override = round(27.75/.8, 0) #0.25deg
 
 # if sigma override is None, calculate sigma from below
 res_prism = 0.8
@@ -79,11 +79,11 @@ webvars = {
 
 # Region Boundaries (minlat, maxlat, minlon, maxlon)
 map_regions = {
-#     'UT':(-114.7, -108.5, 36.7, 42.5),
+    'UT':(-114.7, -108.5, 36.7, 42.5),
 #     'WM':(-117, -108.5, 43, 49),
-#     'CO':(-110, -104, 36, 41.9),
+    'CO':(-110, -104, 36, 41.9),
 #     'SN':(-123.5, -116.0, 33.5, 41),
 #     'WE':(-125, -102.5, 31.0, 49.2),
-    'NW':(-125, -116.5, 42.0, 49.1),
-#     'NU':(-113.4, -110.7, 39.5, 41.9),
+#     'NW':(-125, -116.5, 42.0, 49.1),
+    'NU':(-113.4, -110.7, 39.5, 41.9),
     }

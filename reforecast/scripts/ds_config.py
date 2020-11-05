@@ -2,8 +2,10 @@ import numpy as np
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Directory Configuration
-chpcdir = '/uufs/chpc.utah.edu/common/home/steenburgh-group10/mewessler/models/downscaledqsf_rerun/'
-datadir = '/uufs/chpc.utah.edu/common/home/steenburgh-group10/steenburgh_archive/'
+#chpcdir = '/uufs/chpc.utah.edu/common/home/steenburgh-group10/mewessler/models/downscaledqsf_rerun/'
+chpcdir = '/uufs/chpc.utah.edu/common/home/u1070830/code/downscaled-deterministic-snow/reforecast/'
+#datadir = '/uufs/chpc.utah.edu/common/home/steenburgh-group10/steenburgh_archive/'
+datadir = '/uufs/chpc.utah.edu/common/home/u1070830/code/downscaled-deterministic-snow/reforecast/testdata/'
 tmpdir = '/scratch/general/lustre/u1070830/modeltemp/'
 
 prism_dir = chpcdir + 'prism/'

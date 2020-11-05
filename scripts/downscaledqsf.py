@@ -1,3 +1,4 @@
+#!/uufs/chpc.utah.edu/common/home/u1070830/anaconda3/envs/downscaledqsf/bin/python
 import os
 import gc
 import sys
@@ -27,7 +28,7 @@ os.environ['OMP_NUM_THREADS'] = str("1")
 
 if __name__ == '__main__':
     
-    input('filter type: %s\nsigma override:%s'%(grid_filter, sigma_override))
+#     input('filter type: %s\nsigma override:%s'%(grid_filter, sigma_override))
 
     # Determine which model run to grab
     model = sys.argv[1] 
@@ -270,7 +271,7 @@ if __name__ == '__main__':
         imgdir  = mkdir_p(datadir + '%s/images/models/%s/'%(init_req[:-2], model.lower()))
         make_plots_mpi = partial(make_plots, 
             model=model, imgdir=imgdir, domain=domain)
-
+        
         print('Spawning new plotting pool')
         with get_context('spawn').Pool(40) as p:
             p.map(make_plots_mpi, fhrdata, chunksize=1)

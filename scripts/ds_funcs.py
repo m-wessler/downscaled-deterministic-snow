@@ -795,8 +795,6 @@ def make_plots(fhrdata, model, imgdir, domain='WE'):
 
     lons, lats = data.lon.values, data.lat.values
     
-    print(data)
-
     if var in ['qpf', 'dqpf']:
         vals = data.sum(dim='time').values/25.4 
         levs, norml, cmap, tickloc, ticks = (
@@ -862,11 +860,6 @@ def make_plots(fhrdata, model, imgdir, domain='WE'):
         # Project as 'aea', 'lcc', or 'mill'
         projection='mill')
 
-    # Plot geography
-    bmap.drawcoastlines(linewidth=1.0, color='black')
-    bmap.drawcountries(linewidth=0.85, color='black')
-    bmap.drawstates(linewidth=1.25, color='black')
-    
     # Project the lat/lon grid
     meshlon, meshlat = np.meshgrid(lons, lats)
     X, Y = bmap(meshlon, meshlat)
@@ -892,7 +885,12 @@ def make_plots(fhrdata, model, imgdir, domain='WE'):
     cbar.set_ticks(tickloc)
     cbar.set_ticklabels(ticks)
     cbar.ax.tick_params(size=1)
-
+    
+    # Plot geography
+    bmap.drawcoastlines(linewidth=1.0, color='black')    
+    bmap.drawcountries(linewidth=0.85, color='black')
+    bmap.drawstates(linewidth=1.25, color='black')
+    
     # Add the U watermark
     logo = mimage.imread(chpcdir + 'Ulogo_400p.png')
     axs_water = [0.15, 0.12, 0.10, 0.15]
