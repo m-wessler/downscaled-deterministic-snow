@@ -1,5 +1,7 @@
 #!/uufs/chpc.utah.edu/common/home/u1070830/anaconda3/envs/downscaledqsf/bin/python
 import os
+os.environ['PROJ_LIB'] = '/uufs/chpc.utah.edu/common/home/u1070830/anaconda3/envs/downscaledqsf/share/proj'
+
 import gc
 import sys
 import wrf

@@ -5,7 +5,7 @@ import numpy as np
 chpcdir = ('/uufs/chpc.utah.edu/common/home/u1070830/' +
            'code/downscaled-deterministic-snow/')
            
-datadir = '/scratch/general/lustre/u1070830/gfs_prism/archive/'
+datadir = '/uufs/chpc.utah.edu/common/home/steenburgh-group10/mewessler/gfs_prism_para/'
 tmpdir = '/scratch/general/lustre/u1070830/gfs_prism/temp/'
 
 prism_dir = chpcdir + 'prism/'
