@@ -16,7 +16,7 @@
 
 module load anaconda3/2018.12
 
-SCRIPTDIR='/uufs/chpc.utah.edu/common/home/u1070830/code/downscaled-deterministic-snow'
+SCRIPTDIR='/uufs/chpc.utah.edu/common/home/u1070830/code/downscaled-deterministic-snow/scripts'
 
 if [ $1 ]; then
     python -W ignore "$SCRIPTDIR/downscaledqsf.py" "$1" "$2$3$4$5"

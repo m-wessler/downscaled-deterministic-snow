@@ -1,7 +1,6 @@
-#!/uufs/chpc.utah.edu/common/home/u1070830/anaconda3/envs/downscaledqsf/bin/python
-import os
-os.environ['PROJ_LIB'] = '/uufs/chpc.utah.edu/common/home/u1070830/anaconda3/envs/downscaledqsf/share/proj'
+#!/uufs/chpc.utah.edu/sys/installdir/anaconda3/2018.12/bin/python
 
+import os
 import gc
 import sys
 import wrf
@@ -16,7 +15,7 @@ from subprocess import call
 from metpy.units import units as mpu
 from datetime import datetime, timedelta
 
-import psutil
+import psutil 
 from functools import partial
 from multiprocessing import Pool, cpu_count, get_context
 
@@ -29,8 +28,6 @@ from ds_config import *
 os.environ['OMP_NUM_THREADS'] = str("1")
 
 if __name__ == '__main__':
-    
-#     input('filter type: %s\nsigma override:%s'%(grid_filter, sigma_override))
 
     # Determine which model run to grab
     model = sys.argv[1] 
@@ -131,13 +128,8 @@ if __name__ == '__main__':
 
         # Calculate the mixing ratio
         qv = isobaric.t.copy().rename('qv')
-                
-        qv.values = np.array(
-            mpc.mixing_ratio_from_relative_humidity(
-                isobaric.r.values*mpu.percent, 
-                (isobaric.t.values-273.15)*mpu.degC,
-                p.values*mpu.millibar))
-                
+        qv.values = np.array(mpc.mixing_ratio_from_relative_humidity(
+            isobaric.r.values/100, isobaric.t.values-273.15*mpu.degC, p.values*mpu.millibar))
         # Repair the dimensions after metpy messes with them
         qv['time'] = isobaric.time
         qv['level'] = isobaric.level
@@ -196,7 +188,7 @@ if __name__ == '__main__':
                 "Cores Available: {}\nCores to use: {}\n").format(
                 hmem_avail, len(indexer), hmem_need,
                 memlim, cores))
-        
+
         downscale_calc_grids_mpi = partial(
             downscale_calc_grids, 
             model=model, init_req=init_req, temp=temp)
@@ -273,7 +265,7 @@ if __name__ == '__main__':
         imgdir  = mkdir_p(datadir + '%s/images/models/%s/'%(init_req[:-2], model.lower()))
         make_plots_mpi = partial(make_plots, 
             model=model, imgdir=imgdir, domain=domain)
-        
+
         print('Spawning new plotting pool')
         with get_context('spawn').Pool(40) as p:
             p.map(make_plots_mpi, fhrdata, chunksize=1)

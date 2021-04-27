@@ -49,14 +49,22 @@ def download(url, init, mod, minsize=1e5, timeout=10, wait=120):
     while not isfile(f):
         print('Downloading %s'%_file)
 
-        try:
-            urllib.request.urlretrieve(url, f)
+#         try:
+        
+        print(url)
+        urllib.request.urlretrieve(url, f)
+#         EX wget -O filename.zip http://www.domain.com/filename-4.0.1.zip
+            
+#             dl_cmd = 'wget -O %s %s'%(f, url)
+#             os.sys(wget)
 
-        except OSError:
-            # Sometimes urllib struggles. Before totally giving up, try this
-            # the old fashioned way first...
-            curlcommand = 'curl -s -m {} -o {} {}'.format(timeout, f, url)
-            call(curlcommand, shell=True)
+
+#         except OSError:
+#             # Sometimes urllib struggles. Before totally giving up, try this
+#             # the old fashioned way first...
+
+#         curlcommand = 'curl -s -m {} -o {} {}'.format(timeout, f, url)
+#         call(curlcommand, shell=True)
 
         try:
             fsize = stat(f).st_size
@@ -82,7 +90,6 @@ def download(url, init, mod, minsize=1e5, timeout=10, wait=120):
 
 def get_GFS(_inittime):
     from multiprocessing import cpu_count, Pool
-    from multiprocessing.dummy import Pool as ThreadPool
     from functools import partial
     import pygrib
 
@@ -111,18 +118,18 @@ def get_GFS(_inittime):
         file = 'file=gfs.t{:02d}z.pgrb2.0p25.f{:03d}'.format(init_hour, fhr)
         urllist.append(base + file + levs + lvars + subset + ext)
         
-    
-    p = ThreadPool(len(urllist))
+    p = Pool(len(urllist))
     download_mp = partial(download, init=init_date, mod=_model)
     flist = p.map(download_mp, urllist)
     p.close()
     p.join()
 
+#     flist = [download(_url, init=init_date, mod=_model) for _url in urllist]
+
     flist = np.array(flist)[np.argsort(flist)]
 
-    p = ThreadPool(len(flist))
-    open_dataset = partial(xr.open_dataset, engine='cfgrib', 
-                           backend_kwargs={'filter_by_keys':{'typeOfLevel': 'isobaricInhPa'}})
+    p = Pool(len(flist))
+    open_dataset = partial(xr.open_dataset, engine='cfgrib', backend_kwargs={'filter_by_keys':{'typeOfLevel': 'isobaricInhPa'}})
     _isobaric = p.map(open_dataset, flist)
     p.close()
     p.join()
@@ -130,12 +137,18 @@ def get_GFS(_inittime):
     isobaric = xr.concat(_isobaric, dim='valid_time').rename(
         {'isobaricInhPa':'level', 'latitude':'lat', 'longitude':'lon'})
 
-    _surface = xr.open_mfdataset(flist, engine='cfgrib', combine='nested', concat_dim='valid_time', 
-                                backend_kwargs={'filter_by_keys':
-                                                {'typeOfLevel': 'surface', 'stepType':'instant'}}, )
+#     _surface = xr.open_mfdataset(flist, engine='cfgrib', 
+#                                 backend_kwargs={'filter_by_keys':
+#                                                 {'typeOfLevel': 'surface', 'stepType':'instant'}}, 
+#                                 concat_dim='valid_time')
 
-    tp = [xr.open_dataset(f, engine='cfgrib', drop_variables=['sp', 'orog', 't', 'step', 'time', 'surface'], 
-                          backend_kwargs={'filter_by_keys':{'typeOfLevel':'surface'}}) for f in flist]
+    _surface = xr.concat([xr.open_dataset(f, engine='cfgrib',
+                               backend_kwargs={'filter_by_keys':
+                                               {'typeOfLevel': 'surface', 
+                                                'stepType':'instant'}},) 
+               for f in flist], dim='valid_time')
+
+    tp = [xr.open_dataset(f, engine='cfgrib', drop_variables=['sp', 'orog', 't', 'step', 'time', 'surface'], backend_kwargs={'filter_by_keys':{'typeOfLevel':'surface'}}) for f in flist]
     tp = [t.reset_coords('valid_time') for t in tp]
     tp[0]['tp'] = tp[1].tp.copy()
     tp[0]['tp'].values = np.zeros(tp[0].tp.shape)
@@ -154,7 +167,7 @@ def get_GFS(_inittime):
     _surface10m = xr.concat(_surface10m, dim='valid_time').rename({'u10':'u10m', 'v10':'v10m'})
 
     del _surface2m['heightAboveGround'], _surface10m['heightAboveGround']
-    surface = xr.merge([_surface, _surface2m, _surface10m], compat='override').rename({'latitude':'lat', 'longitude':'lon'})
+    surface = xr.merge([_surface, _surface2m, _surface10m]).rename({'latitude':'lat', 'longitude':'lon'})
     del surface['surface'], _surface, _surface2m, _surface10m
 
     isobaric['lon'] = isobaric.lon - 360
@@ -239,12 +252,12 @@ def get_NAM(_inittime):
     isobaric = xr.concat(_isobaric, dim='valid_time').rename(
         {'isobaricInhPa':'level', 'latitude':'lat', 'longitude':'lon'})
 
-    _surface = xr.open_mfdataset(flist, engine='cfgrib', combine='nested',
+    _surface = xr.open_mfdataset(flist, engine='cfgrib', 
                                 backend_kwargs={'filter_by_keys':
                                                 {'typeOfLevel': 'surface', 'stepType':'instant'}}, 
                                 concat_dim='valid_time')
 
-    _surface_tp = xr.open_mfdataset(flist, engine='cfgrib', combine='nested',
+    _surface_tp = xr.open_mfdataset(flist, engine='cfgrib', 
                                 backend_kwargs={'filter_by_keys':
                                                 {'typeOfLevel': 'surface', 'stepType':'accum'}}, 
                                 concat_dim='valid_time')['tp']
@@ -379,7 +392,6 @@ def downscale_prism(init, _model, minclip=0.3, maxclip=5.0):
     import warnings
     warnings.filterwarnings("ignore")
     
-    import cv2
     from scipy import ndimage
     from pandas import to_datetime
     from datetime import datetime, timedelta
@@ -412,7 +424,14 @@ def downscale_prism(init, _model, minclip=0.3, maxclip=5.0):
     # Smoothing algebra
     efold = res_model[_model] * 2 / res_prism + 1
     sigma = efold / (np.pi*np.sqrt(2))
-
+# 
+#   Alternative sigmas for testing
+#
+#    sigma = 111/.8  #1.0deg
+#    sigma = 55.5/.8 #0.5deg
+#    sigma = 27.75/.8 #0.25deg
+    print('sigma= ',sigma)
+    
     # Loop through the days of this run gathering the climo ratios
     ratios = list()
 
@@ -429,17 +448,8 @@ def downscale_prism(init, _model, minclip=0.3, maxclip=5.0):
             datetime.strptime(str(day[0]),'%j').strftime('%m/%d')))
 
         # Create an image smoothed to the model resolution
-        # Override sigma
-        sigma = sigma_override if sigma_override is not None else sigma
-        print('Sigma: ', sigma)
-        
-        if grid_filter == 'gaussian':
-            smooth_prism = ndimage.filters.gaussian_filter(
-                fixed_prism, sigma, mode='nearest')
-            
-        elif grid_filter == 'box':
-            smooth_prism = cv2.blur(fixed_prism, (int(sigma), int(sigma)))
-        
+        smooth_prism = ndimage.filters.gaussian_filter(fixed_prism, sigma,
+                                                       mode='nearest')
         smooth_prism = np.where(np.logical_and(np.greater(smooth_prism, 0),
                                                np.isfinite(smooth_prism)),
                                 smooth_prism, 0)
@@ -794,7 +804,7 @@ def make_plots(fhrdata, model, imgdir, domain='WE'):
     valid_fname = datetime.strftime(pd.to_datetime(data.time.values[-1]), '%Y%m%d%H')
 
     lons, lats = data.lon.values, data.lat.values
-    
+
     if var in ['qpf', 'dqpf']:
         vals = data.sum(dim='time').values/25.4 
         levs, norml, cmap, tickloc, ticks = (
@@ -834,8 +844,7 @@ def make_plots(fhrdata, model, imgdir, domain='WE'):
         titlevar_agl = 'INSTANTANEOUS WB0.5 HEIGHT ABOVE TERRAIN'
         titlevar = titlevar_agl if var == 'wbzh_agl' else titlevar
         
-    title = 'filter type: %s sigma override: %s\n%s INIT: %s\n\n%s\nFHR %02d VALID: %s\n'%(
-        grid_filter, sigma_override, model[:-2], init, titlevar, fhr, valid)
+    title = '%s INIT: %s\n\n%s\nFHR %02d VALID: %s\n'%(model[:-2], init, titlevar, fhr, valid)
 
     # Initialize the figure frame
     fig = plt.figure(num=None, figsize=(16.0/1.5, 12.0/1.5), facecolor='w', edgecolor='k')
@@ -860,6 +869,11 @@ def make_plots(fhrdata, model, imgdir, domain='WE'):
         # Project as 'aea', 'lcc', or 'mill'
         projection='mill')
 
+    # Plot geography
+    bmap.drawcoastlines(linewidth=1.0, color='black')
+    bmap.drawcountries(linewidth=0.85, color='black')
+    bmap.drawstates(linewidth=1.25, color='black')
+    
     # Project the lat/lon grid
     meshlon, meshlat = np.meshgrid(lons, lats)
     X, Y = bmap(meshlon, meshlat)
@@ -885,12 +899,7 @@ def make_plots(fhrdata, model, imgdir, domain='WE'):
     cbar.set_ticks(tickloc)
     cbar.set_ticklabels(ticks)
     cbar.ax.tick_params(size=1)
-    
-    # Plot geography
-    bmap.drawcoastlines(linewidth=1.0, color='black')    
-    bmap.drawcountries(linewidth=0.85, color='black')
-    bmap.drawstates(linewidth=1.25, color='black')
-    
+
     # Add the U watermark
     logo = mimage.imread(chpcdir + 'Ulogo_400p.png')
     axs_water = [0.15, 0.12, 0.10, 0.15]
